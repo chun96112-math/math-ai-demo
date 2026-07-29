@@ -7,29 +7,45 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  try {
-    const { prompt } = req.body;
-    const apiKey = process.env.GEMINI_API_KEY;
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+  const { prompt, history } = req.body;
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    return res.status(500).json({ error: '未設定 GEMINI_API_KEY 環境變數' });
+  }
+
+  // 國小數學引導老師設定
+  const systemInstruction = `你是一位親切、具啟發性的國小數學引導老師，擅長用生活化的方式帶領學生思考因數與倍數。`;
+
+  try {
+    // 採用 Google AI Studio 支援的 gemini-3.5-flash-lite 模型
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt || "你好" }] }]
+        system_instruction: { parts: [{ text: systemInstruction }] },
+        contents: [
+          ...(history || []),
+          { role: 'user', parts: [{ text: prompt || "你好" }] }
+        ],
+        generationConfig: { temperature: 0.3 }
       })
     });
 
     const data = await response.json();
 
-    // 💡 關鍵：如果 Google API 回傳不是 200，或者抓不到文字，我們直接把 Google 的完整錯誤訊息顯示在畫面上！
     if (!response.ok) {
-      return res.status(200).json({ text: `Google API 錯誤: ${JSON.stringify(data.error || data)}` });
+      return res.status(200).json({ text: `Google API 錯誤: ${JSON.stringify(data.error?.message || data)}` });
     }
 
     const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text;
     
     if (!replyText) {
-      return res.status(200).json({ text: `結構解析失敗，原始資料: ${JSON.stringify(data)}` });
+      return res.status(200).json({ text: `哎呀！AI 老師這題思考得太久了，請再點一次選項試試看！` });
     }
 
     return res.status(200).json({ text: replyText });
