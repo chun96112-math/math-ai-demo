@@ -80,7 +80,7 @@
 
       try {
         // 【注意】這裡換成你部署在 Vercel 得到的網址（例如：https://your-app.vercel.app/api/chat）
-        const res = await fetch('https://math-ai-demo-chun96112-math.vercel.app/api/chat', {
+        const res = await fetch('https://math-ai-demo.vercel.app/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt: promptText, history: chatHistory })
