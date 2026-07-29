@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-  // 1. 強制設定開放所有網域嵌入與呼叫 (解決協作平台 iframe 擋連線問題)
+  // 1. 強制設定開放所有網域嵌入與呼叫
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -24,11 +24,10 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: '未設定 GEMINI_API_KEY 環境變數' });
   }
 
-  // 此處貼入你的 System Instructions
   const systemInstruction = `你是一位親切、具啟發性的國小數學引導老師...`;
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    const apiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -41,11 +40,25 @@ export default async function handler(req, res) {
       })
     });
 
-    const data = await response.json();
-    const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || "AI 暫時無法回應，請檢查金鑰或稍後再試。";
+    const data = await apiResponse.json();
+    
+    // 🔍 如果 Google API 回傳錯誤訊息（例如金鑰不對），我們直接把錯誤拋出來看
+    if (!apiResponse.ok) {
+      console.error("Gemini API Error:", data);
+      return res.status(500).json({ error: data.error?.message || 'Gemini API 呼叫失敗' });
+    }
+
+    // 安全地抓取回傳文字
+    const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!replyText) {
+      console.error("API Response structure unexpected:", JSON.stringify(data));
+      return res.status(200).json({ text: "哎呀！AI 老師這題思考得太久了，請再點一次選項試試看！" });
+    }
     
     return res.status(200).json({ text: replyText });
   } catch (error) {
+    console.error("Server catch error:", error);
     return res.status(500).json({ error: error.message });
   }
 }
