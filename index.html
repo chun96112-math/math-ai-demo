@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>國小數學魔法王國 - 因數與倍數導學</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 20px auto; padding: 15px; background: #f7f9fc; }
+    .chat-box { background: #fff; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); min-height: 300px; margin-bottom: 15px; }
+    .msg { margin-bottom: 12px; line-height: 1.5; }
+    .ai-msg { color: #2c3e50; background: #eef5fc; padding: 10px; border-radius: 8px; }
+    .user-msg { color: #155724; background: #d4edda; padding: 10px; border-radius: 8px; text-align: right; }
+    .btn-group { display: flex; flex-direction: column; gap: 8px; }
+    button { padding: 10px 15px; border: none; background: #4a90e2; color: white; border-radius: 6px; cursor: pointer; text-align: left; }
+    button:hover { background: #357abd; }
+    svg { max-width: 100%; height: auto; }
+  </style>
+</head>
+<body>
+
+  <h2>🧙‍♂️ 國小數學魔法王國</h2>
+  <div class="chat-box" id="chatBox"></div>
+  <div class="btn-group" id="btnGroup"></div>
+
+  <script>
+    // 1. 三套隨機開場白資料庫
+    const scenes = [
+      {
+        welcome: "嗨！歡迎來到數學魔法王國！🧙‍♂️\n今天我們要挑戰第一個魔法任務：「分裝 12 個魔法蘋果 🍎」。\n只要能把蘋果平分裝進袋子裡，而且一顆都不剩下，你就能解開「因數」的秘密密碼！準備好跟我一起探索了嗎？",
+        options: [
+          { label: "[ A ] 我準備好了，快帶我玩分裝魔法！", prompt: "學生選擇了 [A] 冒險風，請直接開始 12 個蘋果的分裝挑戰，問第一個問題。" },
+          { label: "[ B ] 我想先用圖片看看怎麼分蘋果", prompt: "學生選擇了 [B] 冒險風，請繪製 12 個蘋果的 SVG 圖示，並引導進行分裝填空，不可劇透答案。" },
+          { label: "[ C ] 什麼是「剛好分完」？先示範給我看", prompt: "學生選擇了 [C] 冒險風，請用簡單例子說明整除，不可直接給出所有因數。" }
+        ]
+      },
+      {
+        welcome: "哈囉！今天我們要一起來破解 12 的因數密碼 🔐\n簡單來說，如果能把 12 個蘋果「剛好整除分完」，那個數字就是 12 的因數。你想從哪裡開始試試看？",
+        options: [
+          { label: "[ A ] 直接開始！試試 2 個裝一袋", prompt: "學生選擇了 [A] 快節奏，請引導討論 12 個蘋果分成每袋 2 個的情況。" },
+          { label: "[ B ] 先畫 12 個蘋果圖給我看", prompt: "學生選擇了 [B] 快節奏，請繪製 12 個蘋果分裝圖，引導回答。" },
+          { label: "[ C ] 我想看看 12 有哪些對配好的好朋友", prompt: "學生選擇了 [C] 快節奏，請畫出因數對對碰框框圖（帶問號，絕不可直接寫出所有答案）。" }
+        ]
+      }
+    ];
+
+    let chatHistory = [];
+
+    // 2. 初始化隨機載入開場
+    function init() {
+      const selectedScene = scenes[Math.floor(Math.random() * scenes.length)];
+      appendMsg('ai', selectedScene.welcome);
+      renderButtons(selectedScene.options);
+    }
+
+    function appendMsg(sender, text) {
+      const chatBox = document.getElementById('chatBox');
+      const div = document.createElement('div');
+      div.className = `msg ${sender}-msg`;
+      // 將 Markdown 的 ```xml <svg>...</svg> ``` 解析成真實 SVG 圖形
+      div.innerHTML = text.replace(/```(?:xml|svg)?\n?([\s\S]*?)```/g, '$1');
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function renderButtons(options) {
+      const btnGroup = document.getElementById('btnGroup');
+      btnGroup.innerHTML = '';
+      options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.innerText = opt.label;
+        btn.onclick = () => sendMessage(opt.label, opt.prompt);
+        btnGroup.appendChild(btn);
+      });
+    }
+
+    // 3. 送出對話給後端 Vercel
+    async function sendMessage(userLabel, promptText) {
+      appendMsg('user', userLabel);
+      document.getElementById('btnGroup').innerHTML = '<p>AI 老師思考中...</p>';
+
+      try {
+        // 【注意】這裡換成你部署在 Vercel 得到的網址（例如：https://your-app.vercel.app/api/chat）
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: promptText, history: chatHistory })
+        });
+        
+        const data = await res.json();
+        appendMsg('ai', data.text);
+
+        // 紀錄對話歷史
+        chatHistory.push({ role: 'user', parts: [{ text: promptText }] });
+        chatHistory.push({ role: 'model', parts: [{ text: data.text }] });
+
+        // 預設下一輪基礎選單
+        renderButtons([
+          { label: "[ A ] 繼續挑戰下一題", prompt: "請繼續推進到下一關或下一個問題。" },
+          { label: "[ B ] 我想看看圖片提示", prompt: "請現場繪製 SVG 提示圖，引導我思考。" }
+        ]);
+      } catch (err) {
+        appendMsg('ai', '連線失敗，請再試一次。');
+      }
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
