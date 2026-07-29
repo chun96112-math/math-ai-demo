@@ -85,6 +85,15 @@
     .option-btn:hover {
       background-color: #c7d2fe;
     }
+    /* SVG 圖片容器樣式 */
+    .svg-container {
+      margin-top: 10px;
+      background: #fff;
+      padding: 10px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+      text-align: center;
+    }
     /* 快捷功能列 (提示、看圖) */
     .quick-actions {
       display: flex;
@@ -162,9 +171,9 @@
       <div class="message ai">
         嗨！歡迎來到魔法王國！🍎 我們要把 12 顆蘋果平分裝進袋子裡，一顆都不剩。請問可以怎麼裝呢？
         <div class="options-container">
-          <button class="option-btn" onclick="sendOption('[A] 每次裝 2 個，拿 6 個袋子')">[A] 每次裝 2 個，拿 6 個袋子</button>
-          <button class="option-btn" onclick="sendOption('[B] 每次裝 3 個，拿 4 個袋子')">[B] 每次裝 3 個，拿 4 個袋子</button>
-          <button class="option-btn" onclick="sendOption('[C] 每次裝 5 個，好像分不平...')">[C] 每次裝 5 個，好像分不平...</button>
+          <button class="option-btn" onclick="sendOption('[A] 每袋裝 5 個，裝成 2 袋還剩 2 個')">[A] 每袋裝 5 個，裝成 2 袋還剩 2 個</button>
+          <button class="option-btn" onclick="sendOption('[B] 每袋裝 3 個，裝成 4 袋剛剛好')">[B] 每袋裝 3 個，裝成 4 袋剛剛好</button>
+          <button class="option-btn" onclick="sendOption('[C] 💡 我不太確定，請給我提示或看圖')">[C] 💡 我不太確定，請給我提示或看圖</button>
         </div>
       </div>
     </div>
@@ -238,24 +247,46 @@
       return msgDiv.id;
     }
 
+    // 智慧解析 AI 回覆：同時支援文字、SVG 圖片區塊，以及隨機排列的 [A]/[B]/[C] 選項按鈕
     function appendAiMessageSmart(fullText) {
       const msgDiv = document.createElement('div');
       msgDiv.className = 'message ai';
 
-      const lines = fullText.split('\n');
+      // 1. 檢查並提取 SVG 圖片區塊
+      let svgContent = null;
+      let textToProcess = fullText;
+      const svgMatch = fullText.match(/```svg([\s\S]*?)```/);
+      if (svgMatch) {
+        svgContent = svgMatch[1].trim();
+        textToProcess = fullText.replace(/```svg[\s\S]*?```/g, '');
+      }
+
+      const lines = textToProcess.split('\n');
       let mainTextLines = [];
       let options = [];
 
       lines.forEach(line => {
-        if (/^\[?[A-D][\.\］\s]/.test(line.trim())) {
-          options.push(line.trim());
+        const trimmed = line.trim();
+        // 抓取格式為 [A]、[B]、[C] 或帶空格的選項
+        if (/^[\*\-\s]*\[\s*[A-C]\s*\]/.test(trimmed)) {
+          options.push(trimmed.replace(/^[\*\-\s]*/, ''));
         } else {
           mainTextLines.push(line);
         }
       });
 
+      // 設定主要對話文字
       msgDiv.innerText = mainTextLines.join('\n').trim();
 
+      // 2. 如果有 SVG 圖片，動態渲染出來
+      if (svgContent) {
+        const svgDiv = document.createElement('div');
+        svgDiv.className = 'svg-container';
+        svgDiv.innerHTML = svgContent;
+        msgDiv.appendChild(svgDiv);
+      }
+
+      // 3. 如果有抓到選項，動態產生對應按鈕
       if (options.length > 0) {
         const optionsDiv = document.createElement('div');
         optionsDiv.className = 'options-container';
