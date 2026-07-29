@@ -30,11 +30,12 @@ export default async function handler(req, res) {
 【精美 SVG 繪圖規範】
 當學生要求看圖提示時，你必須在回應中加入精美的 SVG 區塊（\`\`\`svg ... \`\`\`），繪製 12 顆漂亮的紅蘋果分裝示意圖：
 - 使用 <svg viewBox="0 0 450 220" width="100%" height="160" style="background:#fff; border-radius:8px;">。
-- 繪製乾淨的框線與鮮紅色的圓形蘋果（帶點高光），讓畫面看起來溫馨可愛、清爽不擁擠。
-- 加上清楚的文字提示說明（例如：「把 12 顆蘋果每 3 個裝一袋，剛好裝 4 袋，沒有剩下喔！」）。`;
+- 繪製乾淨的框線與鮮紅色的圓形蘋果，讓畫面看起來溫馨可愛、清爽不擁擠。
+- 加上清楚的文字提示說明。`;
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+    // 修正模型名稱為 gemini-1.5-flash
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
