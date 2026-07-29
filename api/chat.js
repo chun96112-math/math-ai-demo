@@ -34,8 +34,8 @@ export default async function handler(req, res) {
 - 加上清楚的文字提示說明。`;
 
   try {
-    // 使用成本最低、最輕量的 gemini-3.5-flash-lite
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`, {
+    // 使用目前全面支援且穩定高效的 gemini-2.0-flash
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
