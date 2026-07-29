@@ -86,7 +86,6 @@
     .option-btn:hover {
       background-color: #c7d2fe;
     }
-    /* 精美 SVG 圖片容器 */
     .svg-container {
       margin-top: 12px;
       background: #fffbeb;
@@ -147,9 +146,9 @@
       <div class="message ai">
         嗨！歡迎來到魔法王國！🍎 我們要把 12 顆魔法蘋果平分裝進袋子裡，每一袋要裝一樣多，而且不能有剩下。你覺得可以怎麼分呢？
         <div class="options-container">
-          <button class="option-btn" onclick="sendOption('[A] 每袋裝 5 個，裝成 2 袋看看')">[A] 每袋裝 5 個，裝成 2 袋看看</button>
-          <button class="option-btn" onclick="sendOption('[B] 每袋裝 3 個，裝成 4 袋看看')">[B] 每袋裝 3 個，裝成 4 袋看看</button>
-          <button class="option-btn" onclick="sendOption('[C] 🖼️ 我想看圖片提示！')">[C] 🖼️ 我想看圖片提示！</button>
+          <button class="option-btn" data-text="[A] 每袋裝 5 個，裝成 2 袋看看">[A] 每袋裝 5 個，裝成 2 袋看看</button>
+          <button class="option-btn" data-text="[B] 每袋裝 3 個，裝成 4 袋看看">[B] 每袋裝 3 個，裝成 4 袋看看</button>
+          <button class="option-btn" data-text="[C] 🖼️ 我想看圖片提示！">[C] 🖼️ 我想看圖片提示！</button>
         </div>
       </div>
     </div>
@@ -171,9 +170,14 @@
       if (e.key === 'Enter') handleSendText();
     });
 
-    function sendOption(text) {
-      processUserMessage(text);
-    }
+    // 全域事件代理：確保動態產生的選項按鈕絕對可以點擊
+    chatBox.addEventListener('click', function(e) {
+      const btn = e.target.closest('.option-btn');
+      if (btn) {
+        const text = btn.getAttribute('data-text') || btn.innerText;
+        processUserMessage(text);
+      }
+    });
 
     function handleSendText() {
       const text = userInput.value.trim();
@@ -222,12 +226,10 @@
       return msgDiv.id;
     }
 
-    // 智慧解析：自動過濾多餘標籤、提取精美 SVG、分離選項按鈕
     function appendAiMessageSmart(fullText) {
       const msgDiv = document.createElement('div');
       msgDiv.className = 'message ai';
 
-      // 1. 提取 SVG 區塊
       let svgContent = null;
       let textToProcess = fullText;
       
@@ -236,4 +238,90 @@
 
       if (svgMatchBlock) {
         svgContent = svgMatchBlock[1].trim();
-        textToProcess = fullText.replace(/```svg[\s\S]*?
+        textToProcess = fullText.replace(/```svg[\s\S]*?```/g, '');
+      } else if (svgMatchDirect) {
+        svgContent = svgMatchDirect[0].trim();
+        textToProcess = fullText.replace(/<svg[\s\S]*?<\/svg>/g, '');
+      }
+
+      textToProcess = textToProcess
+        .replace(/【引導對話】/g, '')
+        .replace(/【請選擇你的行動】/g, '')
+        .trim();
+
+      const lines = textToProcess.split('\n');
+      let mainTextLines = [];
+      let options = [];
+
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (/^[\*\-\s]*\[\s*[A-C]\s*\]/.test(trimmed)) {
+          options.push(trimmed.replace(/^[\*\-\s]*/, ''));
+        } else if (trimmed !== '') {
+          mainTextLines.push(trimmed);
+        }
+      });
+
+      msgDiv.innerText = mainTextLines.join('\n');
+
+      if (svgContent) {
+        const svgDiv = document.createElement('div');
+        svgDiv.className = 'svg-container';
+        svgDiv.innerHTML = svgContent;
+        msgDiv.appendChild(svgDiv);
+      }
+
+      if (options.length > 0) {
+        const optionsDiv = document.createElement('div');
+        optionsDiv.className = 'options-container';
+
+        options.forEach(opt => {
+          const btn = document.createElement('button');
+          btn.className = 'option-btn';
+          btn.setAttribute('data-text', opt);
+          btn.innerText = opt;
+          optionsDiv.appendChild(btn);
+        });
+
+        msgDiv.appendChild(optionsDiv);
+      }
+
+      chatBox.appendChild(msgDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function removeMessage(id) {
+      if (!id) return;
+      const elem = document.getElementById(id);
+      if (elem) elem.remove();
+    }
+
+    let recognition = null;
+    function toggleSpeechRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert('您的瀏覽器不支援語音輸入功能。');
+        return;
+      }
+      if (!recognition) {
+        recognition = new SpeechRecognition();
+        recognition.lang = 'zh-TW';
+        recognition.onstart = () => { micBtn.classList.add('recording'); micBtn.innerText = '🔴 聆聽中...'; };
+        recognition.onresult = (event) => { userInput.value = event.results[0][0].transcript; };
+        recognition.onerror = () => { stopRecognition(); };
+        recognition.onend = () => { stopRecognition(); };
+      }
+      if (micBtn.classList.contains('recording')) {
+        recognition.stop();
+      } else {
+        recognition.start();
+      }
+    }
+
+    function stopRecognition() {
+      micBtn.classList.remove('recording');
+      micBtn.innerText = '🎤 語音';
+    }
+  </script>
+</body>
+</html>
