@@ -34,7 +34,7 @@
     }
     #chat-box {
       flex: 1;
-      height: 400px;
+      height: 440px;
       overflow-y: auto;
       border: 1px solid #e5e7eb;
       border-radius: 12px;
@@ -94,25 +94,6 @@
       border-radius: 8px;
       text-align: center;
     }
-    /* 快捷功能列 (提示、看圖) */
-    .quick-actions {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-    .quick-btn {
-      background-color: #fef3c7;
-      color: #92400e;
-      border: 1px solid #fde68a;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 13px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    .quick-btn:hover {
-      background-color: #fde68a;
-    }
     .input-area {
       display: flex;
       gap: 8px;
@@ -160,12 +141,6 @@
 
   <div class="container">
     <h1>🧙‍♂️ 國小數學魔法王國 - 因數與倍數</h1>
-    
-    <!-- 快捷功能列 -->
-    <div class="quick-actions">
-      <button class="quick-btn" onclick="sendOption('💡 老師，請給我一個提示！')">💡 給我提示</button>
-      <button class="quick-btn" onclick="sendOption('🖼️ 我想看圖片提示！')">🖼️ 看圖片提示</button>
-    </div>
 
     <div id="chat-box">
       <div class="message ai">
@@ -173,7 +148,7 @@
         <div class="options-container">
           <button class="option-btn" onclick="sendOption('[A] 每袋裝 5 個，裝成 2 袋還剩 2 個')">[A] 每袋裝 5 個，裝成 2 袋還剩 2 個</button>
           <button class="option-btn" onclick="sendOption('[B] 每袋裝 3 個，裝成 4 袋剛剛好')">[B] 每袋裝 3 個，裝成 4 袋剛剛好</button>
-          <button class="option-btn" onclick="sendOption('[C] 💡 我不太確定，請給我提示或看圖')">[C] 💡 我不太確定，請給我提示或看圖</button>
+          <button class="option-btn" onclick="sendOption('[C] 🖼️ 我想看圖片提示！')">[C] 🖼️ 我想看圖片提示！</button>
         </div>
       </div>
     </div>
@@ -247,18 +222,24 @@
       return msgDiv.id;
     }
 
-    // 智慧解析 AI 回覆：同時支援文字、SVG 圖片區塊，以及隨機排列的 [A]/[B]/[C] 選項按鈕
+    // 智慧解析 AI 回覆：支援文字、SVG 圖形區塊，以及隨機排列的 [A]/[B]/[C] 選項按鈕
     function appendAiMessageSmart(fullText) {
       const msgDiv = document.createElement('div');
       msgDiv.className = 'message ai';
 
-      // 1. 檢查並提取 SVG 圖片區塊
+      // 1. 檢查並提取 SVG 圖片區塊 (支援 ```svg ... ``` 或直接抓取 <svg>...</svg>)
       let svgContent = null;
       let textToProcess = fullText;
-      const svgMatch = fullText.match(/```svg([\s\S]*?)```/);
-      if (svgMatch) {
-        svgContent = svgMatch[1].trim();
+      
+      const svgMatchBlock = fullText.match(/```svg([\s\S]*?)```/);
+      const svgMatchDirect = fullText.match(/<svg[\s\S]*?<\/svg>/);
+
+      if (svgMatchBlock) {
+        svgContent = svgMatchBlock[1].trim();
         textToProcess = fullText.replace(/```svg[\s\S]*?```/g, '');
+      } else if (svgMatchDirect) {
+        svgContent = svgMatchDirect[0].trim();
+        textToProcess = fullText.replace(/<svg[\s\S]*?<\/svg>/g, '');
       }
 
       const lines = textToProcess.split('\n');
@@ -267,7 +248,7 @@
 
       lines.forEach(line => {
         const trimmed = line.trim();
-        // 抓取格式為 [A]、[B]、[C] 或帶空格的選項
+        // 抓取格式為 [A]、[B]、[C] 或帶星號/空格的選項
         if (/^[\*\-\s]*\[\s*[A-C]\s*\]/.test(trimmed)) {
           options.push(trimmed.replace(/^[\*\-\s]*/, ''));
         } else {
@@ -278,7 +259,7 @@
       // 設定主要對話文字
       msgDiv.innerText = mainTextLines.join('\n').trim();
 
-      // 2. 如果有 SVG 圖片，動態渲染出來
+      // 2. 如果有抓到 SVG，動態渲染出來
       if (svgContent) {
         const svgDiv = document.createElement('div');
         svgDiv.className = 'svg-container';
@@ -312,7 +293,7 @@
       if (elem) elem.remove();
     }
 
-    // 🎤 語音輸入功能 (使用瀏覽器內建 Web Speech API)
+    // 🎤 語音輸入功能
     let recognition = null;
     function toggleSpeechRecognition() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -336,19 +317,13 @@
           userInput.value = speechToText;
         };
 
-        recognition.onerror = () => {
-          stopRecognition();
-        };
-
-        recognition.onend = () => {
-          stopRecognition();
-        };
+        recognition.onerror = () => { stopRecognition(); };
+        recognition.onend = () => { stopRecognition(); };
       }
 
       if (micBtn.classList.contains('recording')) {
         recognition.stop();
       } else {
-        recognition.recognitionFlag = true;
         recognition.start();
       }
     }
