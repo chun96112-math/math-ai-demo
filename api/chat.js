@@ -15,15 +15,25 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }]
+        contents: [{ role: 'user', parts: [{ text: prompt || "你好" }] }]
       })
     });
 
     const data = await response.json();
-    const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || "AI 老師正在休息中，請再試一次！";
+
+    // 💡 關鍵：如果 Google API 回傳不是 200，或者抓不到文字，我們直接把 Google 的完整錯誤訊息顯示在畫面上！
+    if (!response.ok) {
+      return res.status(200).json({ text: `Google API 錯誤: ${JSON.stringify(data.error || data)}` });
+    }
+
+    const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!replyText) {
+      return res.status(200).json({ text: `結構解析失敗，原始資料: ${JSON.stringify(data)}` });
+    }
 
     return res.status(200).json({ text: replyText });
   } catch (error) {
-    return res.status(500).json({ text: "連線失敗，請稍後再試。" });
+    return res.status(200).json({ text: `程式異常: ${error.message}` });
   }
 }
