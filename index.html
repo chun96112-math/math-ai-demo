@@ -34,7 +34,7 @@
     }
     #chat-box {
       flex: 1;
-      height: 400px;
+      height: 420px;
       overflow-y: auto;
       border: 1px solid #e5e7eb;
       border-radius: 12px;
@@ -64,6 +64,28 @@
       color: #065f46;
       align-self: flex-end;
     }
+    /* 動態選項按鈕區塊 */
+    .options-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .option-btn {
+      background-color: #e0e7ff;
+      color: #3730a3;
+      border: 1px solid #c7d2fe;
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      text-align: left;
+      transition: background-color 0.2s;
+    }
+    .option-btn:hover {
+      background-color: #c7d2fe;
+    }
+    /* 底部輸入區塊 */
     .input-area {
       display: flex;
       gap: 10px;
@@ -99,74 +121,76 @@
   <div class="container">
     <h1>🧙‍♂️ 國小數學魔法王國 - 因數與倍數</h1>
     
-    <!-- 聊天對話紀錄區塊 -->
+    <!-- 對話紀錄區 -->
     <div id="chat-box">
       <div class="message ai">
         嗨！歡迎來到數學魔法王國！🧙‍♂️ 今天我們要挑戰第一個魔法任務：「分裝 12 個魔法蘋果 🍎」。只要能把蘋果平分裝進袋子里，而且一顆都不剩下，你就能解開「因數」的秘密密碼！準備好跟我一起探索了嗎？
+        <div class="options-container">
+          <button class="option-btn" onclick="sendOption('[A] 我準備好了，快帶我玩分裝魔法！')">[A] 我準備好了，快帶我玩分裝魔法！</button>
+          <button class="option-btn" onclick="sendOption('[B] 什麼是因數？可以先提示我嗎？')">[B] 什麼是因數？可以先提示我嗎？</button>
+        </div>
       </div>
     </div>
 
-    <!-- 底部輸入與送出區塊 -->
+    <!-- 自由輸入與送出區塊 -->
     <div class="input-area">
       <input type="text" id="user-input" placeholder="輸入你的回答或想法，例如：可以裝 2 袋..." />
-      <button id="send-btn">送出</button>
+      <button id="send-btn" onclick="handleSendText()">送出</button>
     </div>
   </div>
 
   <script>
     const chatBox = document.getElementById('chat-box');
     const userInput = document.getElementById('user-input');
-    const sendBtn = document.getElementById('send-btn');
-
-    // 儲存對話歷史（供 AI 參照上下文）
     let conversationHistory = [];
 
-    // 點擊送出按鈕
-    sendBtn.addEventListener('click', handleSendMessage);
-
-    // 按 Enter 鍵也能送出
+    // 按 Enter 鍵送出文字
     userInput.addEventListener('keypress', function (e) {
       if (e.key === 'Enter') {
-        handleSendMessage();
+        handleSendText();
       }
     });
 
-    async function handleSendMessage() {
+    // 點擊選項按鈕觸發
+    function sendOption(text) {
+      processUserMessage(text);
+    }
+
+    // 點擊送出按鈕或按 Enter 觸發
+    function handleSendText() {
       const text = userInput.value.trim();
       if (!text) return;
-
-      // 1. 顯示玩家（使用者）的訊息
-      appendMessage('user', text);
       userInput.value = '';
-      
-      // 記錄到歷史
+      processUserMessage(text);
+    }
+
+    // 統一處理使用者訊息與 API 呼叫
+    async function processUserMessage(text) {
+      // 1. 顯示使用者訊息
+      appendMessage('user', text);
       conversationHistory.push({ role: 'user', parts: [{ text: text }] });
 
-      // 2. 顯示思考中提示
+      // 2. 顯示思考中
       const loadingId = appendMessage('ai', 'AI 老師思考中...');
 
       try {
-        // 3. 呼叫你的 Vercel 後端 API
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             prompt: text,
-            history: conversationHistory.slice(0, -1) // 帶入前面的對話
+            history: conversationHistory.slice(0, -1)
           })
         });
 
         const data = await response.json();
-        
-        // 移除思考中的訊息
         removeMessage(loadingId);
 
         const aiReply = data.text || "AI 老師暫時無法回應，請稍後再試。";
         
-        // 4. 顯示 AI 老師的回覆
-        appendMessage('ai', aiReply);
+        // 3. 顯示 AI 回覆（同時自動產生選項按鈕）
+        appendAiMessageWithAutoOptions(aiReply);
         
-        // 記錄 AI 的回覆到歷史
         conversationHistory.push({ role: 'model', parts: [{ text: aiReply }] });
 
       } catch (error) {
@@ -175,23 +199,48 @@
       }
     }
 
-    // 輔助函式：新增訊息到聊天室
+    // 顯示一般訊息
     function appendMessage(sender, text) {
       const msgDiv = document.createElement('div');
       msgDiv.className = `message ${sender}`;
       msgDiv.innerText = text;
-      
-      // 給 loading 訊息一個暫時的 ID 方便移除
       if (text === 'AI 老師思考中...') {
         msgDiv.id = 'loading-msg';
       }
-
       chatBox.appendChild(msgDiv);
-      chatBox.scrollTop = chatBox.scrollHeight; // 自動捲動到底部
+      chatBox.scrollTop = chatBox.scrollHeight;
       return msgDiv.id;
     }
 
-    // 輔助函式：移除指定的訊息
+    // 顯示 AI 訊息，並依據對話內容智慧產生選項按鈕
+    function appendAiMessageWithAutoOptions(text) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'message ai';
+      msgDiv.innerText = text;
+
+      // 根據 AI 回覆內容自動產生 2 個互動選項讓學生點擊
+      const optionsDiv = document.createElement('div');
+      optionsDiv.className = 'options-container';
+
+      // 預設提供常見的引導選項
+      const opt1 = document.createElement('button');
+      opt1.className = 'option-btn';
+      opt1.innerText = '[A] 試試看 2 個裝一袋';
+      opt1.onclick = () => sendOption('[A] 試試看 2 個裝一袋');
+
+      const opt2 = document.createElement('button');
+      opt2.className = 'option-btn';
+      opt2.innerText = '[B] 試試看 3 個裝一袋';
+      opt2.onclick = () => sendOption('[B] 試試看 3 個裝一袋');
+
+      optionsDiv.appendChild(opt1);
+      optionsDiv.appendChild(opt2);
+      msgDiv.appendChild(optionsDiv);
+
+      chatBox.appendChild(msgDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
     function removeMessage(id) {
       if (!id) return;
       const elem = document.getElementById(id);
