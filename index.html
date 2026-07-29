@@ -3,111 +3,201 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>因數與倍數小老師</title>
+  <title>國小數學魔法王國 - 因數與倍數</title>
   <style>
-    body { font-family: sans-serif; max-width: 600px; margin: 20px auto; padding: 15px; background: #f7f9fc; }
-    .chat-box { background: #fff; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); min-height: 300px; margin-bottom: 15px; }
-    .msg { margin-bottom: 12px; line-height: 1.5; }
-    .ai-msg { color: #2c3e50; background: #eef5fc; padding: 10px; border-radius: 8px; }
-    .user-msg { color: #155724; background: #d4edda; padding: 10px; border-radius: 8px; text-align: right; }
-    .btn-group { display: flex; flex-direction: column; gap: 8px; }
-    button { padding: 10px 15px; border: none; background: #4a90e2; color: white; border-radius: 6px; cursor: pointer; text-align: left; }
-    button:hover { background: #357abd; }
-    svg { max-width: 100%; height: auto; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #f3f4f6;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      width: 100%;
+      max-width: 600px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+    }
+    h1 {
+      font-size: 1.5rem;
+      color: #1f2937;
+      margin-top: 0;
+      text-align: center;
+    }
+    #chat-box {
+      flex: 1;
+      height: 400px;
+      overflow-y: auto;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 15px;
+      background-color: #f9fafb;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .message {
+      padding: 12px 16px;
+      border-radius: 12px;
+      max-width: 85%;
+      line-height: 1.5;
+      font-size: 15px;
+      word-break: break-word;
+    }
+    .message.ai {
+      background-color: #ffffff;
+      color: #374151;
+      border: 1px solid #e5e7eb;
+      align-self: flex-start;
+    }
+    .message.user {
+      background-color: #d1fae5;
+      color: #065f46;
+      align-self: flex-end;
+    }
+    .input-area {
+      display: flex;
+      gap: 10px;
+    }
+    #user-input {
+      flex: 1;
+      padding: 12px 16px;
+      font-size: 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      outline: none;
+    }
+    #user-input:focus {
+      border-color: #4f46e5;
+    }
+    #send-btn {
+      padding: 12px 20px;
+      font-size: 16px;
+      background-color: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    #send-btn:hover {
+      background-color: #4338ca;
+    }
   </style>
 </head>
 <body>
 
-  <h2>🧙‍♂️ 國小數學魔法王國 - 因數與倍數</h2>
-  <div class="chat-box" id="chatBox"></div>
-  <div class="btn-group" id="btnGroup"></div>
+  <div class="container">
+    <h1>🧙‍♂️ 國小數學魔法王國 - 因數與倍數</h1>
+    
+    <!-- 聊天對話紀錄區塊 -->
+    <div id="chat-box">
+      <div class="message ai">
+        嗨！歡迎來到數學魔法王國！🧙‍♂️ 今天我們要挑戰第一個魔法任務：「分裝 12 個魔法蘋果 🍎」。只要能把蘋果平分裝進袋子里，而且一顆都不剩下，你就能解開「因數」的秘密密碼！準備好跟我一起探索了嗎？
+      </div>
+    </div>
+
+    <!-- 底部輸入與送出區塊 -->
+    <div class="input-area">
+      <input type="text" id="user-input" placeholder="輸入你的回答或想法，例如：可以裝 2 袋..." />
+      <button id="send-btn">送出</button>
+    </div>
+  </div>
 
   <script>
-    // 1. 三套隨機開場白資料庫
-    const scenes = [
-      {
-        welcome: "嗨！歡迎來到數學魔法王國！🧙‍♂️\n今天我們要挑戰第一個魔法任務：「分裝 12 個魔法蘋果 🍎」。\n只要能把蘋果平分裝進袋子裡，而且一顆都不剩下，你就能解開「因數」的秘密密碼！準備好跟我一起探索了嗎？",
-        options: [
-          { label: "[ A ] 我準備好了，快帶我玩分裝魔法！", prompt: "學生選擇了 [A] 冒險風，請直接開始 12 個蘋果的分裝挑戰，問第一個問題。" },
-          { label: "[ B ] 我想先用圖片看看怎麼分蘋果", prompt: "學生選擇了 [B] 冒險風，請繪製 12 個蘋果的 SVG 圖示，並引導進行分裝填空，不可劇透答案。" },
-          { label: "[ C ] 什麼是「剛好分完」？先示範給我看", prompt: "學生選擇了 [C] 冒險風，請用簡單例子說明整除，不可直接給出所有因數。" }
-        ]
-      },
-      {
-        welcome: "哈囉！今天我們要一起來破解 12 的因數密碼 🔐\n簡單來說，如果能把 12 個蘋果「剛好整除分完」，那個數字就是 12 的因數。你想從哪裡開始試試看？",
-        options: [
-          { label: "[ A ] 直接開始！試試 2 個裝一袋", prompt: "學生選擇了 [A] 快節奏，請引導討論 12 個蘋果分成每袋 2 個的情況。" },
-          { label: "[ B ] 先畫 12 個蘋果圖給我看", prompt: "學生選擇了 [B] 快節奏，請繪製 12 個蘋果分裝圖，引導回答。" },
-          { label: "[ C ] 我想看看 12 有哪些對配好的好朋友", prompt: "學生選擇了 [C] 快節奏，請畫出因數對對碰框框圖（帶問號，絕不可直接寫出所有答案）。" }
-        ]
+    const chatBox = document.getElementById('chat-box');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    // 儲存對話歷史（供 AI 參照上下文）
+    let conversationHistory = [];
+
+    // 點擊送出按鈕
+    sendBtn.addEventListener('click', handleSendMessage);
+
+    // 按 Enter 鍵也能送出
+    userInput.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        handleSendMessage();
       }
-    ];
+    });
 
-    let chatHistory = [];
+    async function handleSendMessage() {
+      const text = userInput.value.trim();
+      if (!text) return;
 
-    // 2. 初始化隨機載入開場
-    function init() {
-      const selectedScene = scenes[Math.floor(Math.random() * scenes.length)];
-      appendMsg('ai', selectedScene.welcome);
-      renderButtons(selectedScene.options);
-    }
+      // 1. 顯示玩家（使用者）的訊息
+      appendMessage('user', text);
+      userInput.value = '';
+      
+      // 記錄到歷史
+      conversationHistory.push({ role: 'user', parts: [{ text: text }] });
 
-    function appendMsg(sender, text) {
-      const chatBox = document.getElementById('chatBox');
-      const div = document.createElement('div');
-      div.className = `msg ${sender}-msg`;
-      // 將 Markdown 的 ```xml <svg>...</svg> ``` 解析成真實 SVG 圖形
-      div.innerHTML = text.replace(/```(?:xml|svg)?\n?([\s\S]*?)```/g, '$1');
-      chatBox.appendChild(div);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    function renderButtons(options) {
-      const btnGroup = document.getElementById('btnGroup');
-      btnGroup.innerHTML = '';
-      options.forEach(opt => {
-        const btn = document.createElement('button');
-        btn.innerText = opt.label;
-        btn.onclick = () => sendMessage(opt.label, opt.prompt);
-        btnGroup.appendChild(btn);
-      });
-    }
-
-    // 3. 送出對話給後端 Vercel
-    async function sendMessage(userLabel, promptText) {
-      appendMsg('user', userLabel);
-      document.getElementById('btnGroup').innerHTML = '<p>AI 老師思考中...</p>';
+      // 2. 顯示思考中提示
+      const loadingId = appendMessage('ai', 'AI 老師思考中...');
 
       try {
-        // 【注意】這裡換成你部署在 Vercel 得到的網址（例如：https://your-app.vercel.app/api/chat）
-        const res = await fetch('https://math-ai-demo.vercel.app/api/chat', {
+        // 3. 呼叫你的 Vercel 後端 API
+        const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: promptText, history: chatHistory })
+          body: JSON.stringify({
+            prompt: text,
+            history: conversationHistory.slice(0, -1) // 帶入前面的對話
+          })
         });
+
+        const data = await response.json();
         
-        const data = await res.json();
-        appendMsg('ai', data.text);
+        // 移除思考中的訊息
+        removeMessage(loadingId);
 
-        // 紀錄對話歷史
-        chatHistory.push({ role: 'user', parts: [{ text: promptText }] });
-        chatHistory.push({ role: 'model', parts: [{ text: data.text }] });
+        const aiReply = data.text || "AI 老師暫時無法回應，請稍後再試。";
+        
+        // 4. 顯示 AI 老師的回覆
+        appendMessage('ai', aiReply);
+        
+        // 記錄 AI 的回覆到歷史
+        conversationHistory.push({ role: 'model', parts: [{ text: aiReply }] });
 
-        // 預設下一輪基礎選單
-        renderButtons([
-          { label: "[ A ] 繼續挑戰下一題", prompt: "請繼續推進到下一關或下一個問題。" },
-          { label: "[ B ] 我想看看圖片提示", prompt: "請現場繪製 SVG 提示圖，引導我思考。" }
-        ]);
-      } catch (err) {
-        appendMsg('ai', '連線失敗，請再試一次。');
+      } catch (error) {
+        removeMessage(loadingId);
+        appendMessage('ai', '連線失敗，請檢查網路或稍後再試。');
       }
     }
-    
-<div style="display: flex; gap: 10px; margin-top: 15px;">
-  <input type="text" id="user-input" placeholder="對 AI 老師說點什麼，例如：可以裝 2 袋..." style="flex: 1; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px;">
-  <button id="send-btn" style="padding: 12px 20px; font-size: 16px; background-color: #4f46e5; color: white; border: none; border-radius: 8px; cursor: pointer;">送出</button>
-</div>
-    window.onload = init;
+
+    // 輔助函式：新增訊息到聊天室
+    function appendMessage(sender, text) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `message ${sender}`;
+      msgDiv.innerText = text;
+      
+      // 給 loading 訊息一個暫時的 ID 方便移除
+      if (text === 'AI 老師思考中...') {
+        msgDiv.id = 'loading-msg';
+      }
+
+      chatBox.appendChild(msgDiv);
+      chatBox.scrollTop = chatBox.scrollHeight; // 自動捲動到底部
+      return msgDiv.id;
+    }
+
+    // 輔助函式：移除指定的訊息
+    function removeMessage(id) {
+      if (!id) return;
+      const elem = document.getElementById(id);
+      if (elem) elem.remove();
+    }
   </script>
+
 </body>
 </html>
