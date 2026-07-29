@@ -177,7 +177,6 @@
 
         const aiReply = data.text || "AI 老師暫時無法回應。";
         
-        // 智慧解析 AI 回覆，自動切分內文與選項
         appendAiMessageSmart(aiReply);
         
         conversationHistory.push({ role: 'model', parts: [{ text: aiReply }] });
@@ -198,17 +197,16 @@
       return msgDiv.id;
     }
 
-    // 智慧解析文字中的 [A], [B], [C] 等選項並轉成按鈕
     function appendAiMessageSmart(fullText) {
       const msgDiv = document.createElement('div');
       msgDiv.className = 'message ai';
 
-      // 用正規表達式找出形如 [A]、[B]、[C] 或 1. 2. 的選項
       const lines = fullText.split('\n');
       let mainTextLines = [];
       let options = [];
 
       lines.forEach(line => {
+        // 抓取開頭是 [A]、[B]、[C]、[D] 的選項行
         if (/^\[?[A-D][\.\］\s]/.test(line.trim())) {
           options.push(line.trim());
         } else {
@@ -216,10 +214,9 @@
         }
       });
 
-      // 主文字內容
       msgDiv.innerText = mainTextLines.join('\n').trim();
 
-      // 如果有抓到選項，動態產生對應數量的按鈕
+      // 只有當 AI 有產生存選項時，才動態產生對應按鈕
       if (options.length > 0) {
         const optionsDiv = document.createElement('div');
         optionsDiv.className = 'options-container';
