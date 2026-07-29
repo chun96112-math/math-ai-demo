@@ -30,11 +30,12 @@
       font-size: 1.5rem;
       color: #1f2937;
       margin-top: 0;
+      margin-bottom: 20px;
       text-align: center;
     }
     #chat-box {
       flex: 1;
-      height: 440px;
+      height: 460px;
       overflow-y: auto;
       border: 1px solid #e5e7eb;
       border-radius: 12px;
@@ -49,7 +50,7 @@
       padding: 12px 16px;
       border-radius: 12px;
       max-width: 90%;
-      line-height: 1.5;
+      line-height: 1.6;
       font-size: 15px;
       word-break: break-word;
       white-space: pre-wrap;
@@ -69,11 +70,11 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      margin-top: 10px;
+      margin-top: 12px;
     }
     .option-btn {
       background-color: #e0e7ff;
-      color: #3730a3;
+      color: #302d9c;
       border: 1px solid #c7d2fe;
       padding: 10px 14px;
       border-radius: 8px;
@@ -85,13 +86,13 @@
     .option-btn:hover {
       background-color: #c7d2fe;
     }
-    /* SVG 圖片容器樣式 */
+    /* 精美 SVG 圖片容器 */
     .svg-container {
-      margin-top: 10px;
-      background: #fff;
-      padding: 10px;
-      border: 1px dashed #cbd5e1;
-      border-radius: 8px;
+      margin-top: 12px;
+      background: #fffbeb;
+      padding: 15px;
+      border: 2px solid #fde68a;
+      border-radius: 12px;
       text-align: center;
     }
     .input-area {
@@ -144,16 +145,15 @@
 
     <div id="chat-box">
       <div class="message ai">
-        嗨！歡迎來到魔法王國！🍎 我們要把 12 顆蘋果平分裝進袋子裡，一顆都不剩。請問可以怎麼裝呢？
+        嗨！歡迎來到魔法王國！🍎 我們要把 12 顆魔法蘋果平分裝進袋子裡，每一袋要裝一樣多，而且不能有剩下。你覺得可以怎麼分呢？
         <div class="options-container">
-          <button class="option-btn" onclick="sendOption('[A] 每袋裝 5 個，裝成 2 袋還剩 2 個')">[A] 每袋裝 5 個，裝成 2 袋還剩 2 個</button>
-          <button class="option-btn" onclick="sendOption('[B] 每袋裝 3 個，裝成 4 袋剛剛好')">[B] 每袋裝 3 個，裝成 4 袋剛剛好</button>
+          <button class="option-btn" onclick="sendOption('[A] 每袋裝 5 個，裝成 2 袋看看')">[A] 每袋裝 5 個，裝成 2 袋看看</button>
+          <button class="option-btn" onclick="sendOption('[B] 每袋裝 3 個，裝成 4 袋看看')">[B] 每袋裝 3 個，裝成 4 袋看看</button>
           <button class="option-btn" onclick="sendOption('[C] 🖼️ 我想看圖片提示！')">[C] 🖼️ 我想看圖片提示！</button>
         </div>
       </div>
     </div>
 
-    <!-- 輸入框與語音列 -->
     <div class="input-area">
       <input type="text" id="user-input" placeholder="輸入想法，或點右邊麥克風說話..." />
       <button id="mic-btn" class="action-btn" onclick="toggleSpeechRecognition()" title="語音輸入">🎤 語音</button>
@@ -222,12 +222,12 @@
       return msgDiv.id;
     }
 
-    // 智慧解析 AI 回覆：支援文字、SVG 圖形區塊，以及隨機排列的 [A]/[B]/[C] 選項按鈕
+    // 智慧解析：自動過濾多餘標籤、提取精美 SVG、分離選項按鈕
     function appendAiMessageSmart(fullText) {
       const msgDiv = document.createElement('div');
       msgDiv.className = 'message ai';
 
-      // 1. 檢查並提取 SVG 圖片區塊 (支援 ```svg ... ``` 或直接抓取 <svg>...</svg>)
+      // 1. 提取 SVG 區塊
       let svgContent = null;
       let textToProcess = fullText;
       
@@ -236,102 +236,4 @@
 
       if (svgMatchBlock) {
         svgContent = svgMatchBlock[1].trim();
-        textToProcess = fullText.replace(/```svg[\s\S]*?```/g, '');
-      } else if (svgMatchDirect) {
-        svgContent = svgMatchDirect[0].trim();
-        textToProcess = fullText.replace(/<svg[\s\S]*?<\/svg>/g, '');
-      }
-
-      const lines = textToProcess.split('\n');
-      let mainTextLines = [];
-      let options = [];
-
-      lines.forEach(line => {
-        const trimmed = line.trim();
-        // 抓取格式為 [A]、[B]、[C] 或帶星號/空格的選項
-        if (/^[\*\-\s]*\[\s*[A-C]\s*\]/.test(trimmed)) {
-          options.push(trimmed.replace(/^[\*\-\s]*/, ''));
-        } else {
-          mainTextLines.push(line);
-        }
-      });
-
-      // 設定主要對話文字
-      msgDiv.innerText = mainTextLines.join('\n').trim();
-
-      // 2. 如果有抓到 SVG，動態渲染出來
-      if (svgContent) {
-        const svgDiv = document.createElement('div');
-        svgDiv.className = 'svg-container';
-        svgDiv.innerHTML = svgContent;
-        msgDiv.appendChild(svgDiv);
-      }
-
-      // 3. 如果有抓到選項，動態產生對應按鈕
-      if (options.length > 0) {
-        const optionsDiv = document.createElement('div');
-        optionsDiv.className = 'options-container';
-
-        options.forEach(opt => {
-          const btn = document.createElement('button');
-          btn.className = 'option-btn';
-          btn.innerText = opt;
-          btn.onclick = () => sendOption(opt);
-          optionsDiv.appendChild(btn);
-        });
-
-        msgDiv.appendChild(optionsDiv);
-      }
-
-      chatBox.appendChild(msgDiv);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    function removeMessage(id) {
-      if (!id) return;
-      const elem = document.getElementById(id);
-      if (elem) elem.remove();
-    }
-
-    // 🎤 語音輸入功能
-    let recognition = null;
-    function toggleSpeechRecognition() {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        alert('您的瀏覽器不支援語音輸入功能（建議使用 Chrome 瀏覽器）。');
-        return;
-      }
-
-      if (!recognition) {
-        recognition = new SpeechRecognition();
-        recognition.lang = 'zh-TW';
-        recognition.interimResults = false;
-
-        recognition.onstart = () => {
-          micBtn.classList.add('recording');
-          micBtn.innerText = '🔴 聆聽中...';
-        };
-
-        recognition.onresult = (event) => {
-          const speechToText = event.results[0][0].transcript;
-          userInput.value = speechToText;
-        };
-
-        recognition.onerror = () => { stopRecognition(); };
-        recognition.onend = () => { stopRecognition(); };
-      }
-
-      if (micBtn.classList.contains('recording')) {
-        recognition.stop();
-      } else {
-        recognition.start();
-      }
-    }
-
-    function stopRecognition() {
-      micBtn.classList.remove('recording');
-      micBtn.innerText = '🎤 語音';
-    }
-  </script>
-</body>
-</html>
+        textToProcess = fullText.replace(/```svg[\s\S]*?
