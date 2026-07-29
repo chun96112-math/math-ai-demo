@@ -102,7 +102,11 @@
         appendMsg('ai', '連線失敗，請再試一次。');
       }
     }
-
+    
+<div style="display: flex; gap: 10px; margin-top: 15px;">
+  <input type="text" id="user-input" placeholder="對 AI 老師說點什麼，例如：可以裝 2 袋..." style="flex: 1; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px;">
+  <button id="send-btn" style="padding: 12px 20px; font-size: 16px; background-color: #4f46e5; color: white; border: none; border-radius: 8px; cursor: pointer;">送出</button>
+</div>
     window.onload = init;
   </script>
 </body>
