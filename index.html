@@ -165,12 +165,10 @@
     }
 
     // 統一處理使用者訊息與 API 呼叫
-    async function processUserMessage(text) {
-      // 1. 顯示使用者訊息
+async function processUserMessage(text) {
       appendMessage('user', text);
       conversationHistory.push({ role: 'user', parts: [{ text: text }] });
 
-      // 2. 顯示思考中
       const loadingId = appendMessage('ai', 'AI 老師思考中...');
 
       try {
@@ -183,19 +181,21 @@
           })
         });
 
+        // 就算後端回傳 500 或 404，我們也把它讀出來看
         const data = await response.json();
         removeMessage(loadingId);
 
-        const aiReply = data.text || "AI 老師暫時無法回應，請稍後再試。";
-        
-        // 3. 顯示 AI 回覆（同時自動產生選項按鈕）
-        appendAiMessageWithAutoOptions(aiReply);
-        
-        conversationHistory.push({ role: 'model', parts: [{ text: aiReply }] });
+        if (data.text) {
+          appendAiMessageWithAutoOptions(data.text);
+          conversationHistory.push({ role: 'model', parts: [{ text: data.text }] });
+        } else {
+          appendMessage('ai', `後端回傳格式怪怪的: ${JSON.stringify(data)}`);
+        }
 
       } catch (error) {
         removeMessage(loadingId);
-        appendMessage('ai', '連線失敗，請檢查網路或稍後再試。');
+        // 💡 關鍵：直接把真正的錯誤原因印出來！
+        appendMessage('ai', `fetch 發生錯誤: ${error.message}`);
       }
     }
 
