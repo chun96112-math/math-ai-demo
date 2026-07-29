@@ -174,7 +174,7 @@
       const loadingId = appendMessage('ai', 'AI 老師思考中...');
 
       try {
-        const response = await fetch('/api/chat', {
+        const response = await fetch('https://math-ai-demo.vercel.app/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
