@@ -6,7 +6,7 @@
   <title>國小數學魔法王國 - 因數與倍數</title>
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: #f3f4f6;
       margin: 0;
       padding: 20px;
@@ -48,10 +48,11 @@
     .message {
       padding: 12px 16px;
       border-radius: 12px;
-      max-width: 85%;
-      line-height: 1.5;
+      max-width: 90%;
+      line-height: 1.6;
       font-size: 15px;
       word-break: break-word;
+      white-space: pre-wrap;
     }
     .message.ai {
       background-color: #ffffff;
@@ -64,12 +65,11 @@
       color: #065f46;
       align-self: flex-end;
     }
-    /* 動態選項按鈕區塊 */
     .options-container {
       display: flex;
       flex-direction: column;
       gap: 8px;
-      margin-top: 8px;
+      margin-top: 12px;
     }
     .option-btn {
       background-color: #e0e7ff;
@@ -85,7 +85,6 @@
     .option-btn:hover {
       background-color: #c7d2fe;
     }
-    /* 底部輸入區塊 */
     .input-area {
       display: flex;
       gap: 10px;
@@ -121,7 +120,6 @@
   <div class="container">
     <h1>🧙‍♂️ 國小數學魔法王國 - 因數與倍數</h1>
     
-    <!-- 對話紀錄區 -->
     <div id="chat-box">
       <div class="message ai">
         嗨！歡迎來到數學魔法王國！🧙‍♂️ 今天我們要挑戰第一個魔法任務：「分裝 12 個魔法蘋果 🍎」。只要能把蘋果平分裝進袋子里，而且一顆都不剩下，你就能解開「因數」的秘密密碼！準備好跟我一起探索了嗎？
@@ -132,9 +130,8 @@
       </div>
     </div>
 
-    <!-- 自由輸入與送出區塊 -->
     <div class="input-area">
-      <input type="text" id="user-input" placeholder="輸入你的回答或想法，例如：可以裝 2 袋..." />
+      <input type="text" id="user-input" placeholder="輸入你的回答或想法..." />
       <button id="send-btn" onclick="handleSendText()">送出</button>
     </div>
   </div>
@@ -144,19 +141,14 @@
     const userInput = document.getElementById('user-input');
     let conversationHistory = [];
 
-    // 按 Enter 鍵送出文字
     userInput.addEventListener('keypress', function (e) {
-      if (e.key === 'Enter') {
-        handleSendText();
-      }
+      if (e.key === 'Enter') handleSendText();
     });
 
-    // 點擊選項按鈕觸發
     function sendOption(text) {
       processUserMessage(text);
     }
 
-    // 點擊送出按鈕或按 Enter 觸發
     function handleSendText() {
       const text = userInput.value.trim();
       if (!text) return;
@@ -164,8 +156,7 @@
       processUserMessage(text);
     }
 
-    // 統一處理使用者訊息與 API 呼叫
-async function processUserMessage(text) {
+    async function processUserMessage(text) {
       appendMessage('user', text);
       conversationHistory.push({ role: 'user', parts: [{ text: text }] });
 
@@ -181,61 +172,68 @@ async function processUserMessage(text) {
           })
         });
 
-        // 就算後端回傳 500 或 404，我們也把它讀出來看
         const data = await response.json();
         removeMessage(loadingId);
 
-        if (data.text) {
-          appendAiMessageWithAutoOptions(data.text);
-          conversationHistory.push({ role: 'model', parts: [{ text: data.text }] });
-        } else {
-          appendMessage('ai', `後端回傳格式怪怪的: ${JSON.stringify(data)}`);
-        }
+        const aiReply = data.text || "AI 老師暫時無法回應。";
+        
+        // 智慧解析 AI 回覆，自動切分內文與選項
+        appendAiMessageSmart(aiReply);
+        
+        conversationHistory.push({ role: 'model', parts: [{ text: aiReply }] });
 
       } catch (error) {
         removeMessage(loadingId);
-        // 💡 關鍵：直接把真正的錯誤原因印出來！
-        appendMessage('ai', `fetch 發生錯誤: ${error.message}`);
+        appendMessage('ai', `連線發生錯誤: ${error.message}`);
       }
     }
 
-    // 顯示一般訊息
     function appendMessage(sender, text) {
       const msgDiv = document.createElement('div');
       msgDiv.className = `message ${sender}`;
       msgDiv.innerText = text;
-      if (text === 'AI 老師思考中...') {
-        msgDiv.id = 'loading-msg';
-      }
+      if (text === 'AI 老師思考中...') msgDiv.id = 'loading-msg';
       chatBox.appendChild(msgDiv);
       chatBox.scrollTop = chatBox.scrollHeight;
       return msgDiv.id;
     }
 
-    // 顯示 AI 訊息，並依據對話內容智慧產生選項按鈕
-    function appendAiMessageWithAutoOptions(text) {
+    // 智慧解析文字中的 [A], [B], [C] 等選項並轉成按鈕
+    function appendAiMessageSmart(fullText) {
       const msgDiv = document.createElement('div');
       msgDiv.className = 'message ai';
-      msgDiv.innerText = text;
 
-      // 根據 AI 回覆內容自動產生 2 個互動選項讓學生點擊
-      const optionsDiv = document.createElement('div');
-      optionsDiv.className = 'options-container';
+      // 用正規表達式找出形如 [A]、[B]、[C] 或 1. 2. 的選項
+      const lines = fullText.split('\n');
+      let mainTextLines = [];
+      let options = [];
 
-      // 預設提供常見的引導選項
-      const opt1 = document.createElement('button');
-      opt1.className = 'option-btn';
-      opt1.innerText = '[A] 試試看 2 個裝一袋';
-      opt1.onclick = () => sendOption('[A] 試試看 2 個裝一袋');
+      lines.forEach(line => {
+        if (/^\[?[A-D][\.\］\s]/.test(line.trim())) {
+          options.push(line.trim());
+        } else {
+          mainTextLines.push(line);
+        }
+      });
 
-      const opt2 = document.createElement('button');
-      opt2.className = 'option-btn';
-      opt2.innerText = '[B] 試試看 3 個裝一袋';
-      opt2.onclick = () => sendOption('[B] 試試看 3 個裝一袋');
+      // 主文字內容
+      msgDiv.innerText = mainTextLines.join('\n').trim();
 
-      optionsDiv.appendChild(opt1);
-      optionsDiv.appendChild(opt2);
-      msgDiv.appendChild(optionsDiv);
+      // 如果有抓到選項，動態產生對應數量的按鈕
+      if (options.length > 0) {
+        const optionsDiv = document.createElement('div');
+        optionsDiv.className = 'options-container';
+
+        options.forEach(opt => {
+          const btn = document.createElement('button');
+          btn.className = 'option-btn';
+          btn.innerText = opt;
+          btn.onclick = () => sendOption(opt);
+          optionsDiv.appendChild(btn);
+        });
+
+        msgDiv.appendChild(optionsDiv);
+      }
 
       chatBox.appendChild(msgDiv);
       chatBox.scrollTop = chatBox.scrollHeight;
@@ -247,6 +245,5 @@ async function processUserMessage(text) {
       if (elem) elem.remove();
     }
   </script>
-
 </body>
 </html>
