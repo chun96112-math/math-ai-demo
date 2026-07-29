@@ -34,12 +34,12 @@
     }
     #chat-box {
       flex: 1;
-      height: 420px;
+      height: 400px;
       overflow-y: auto;
       border: 1px solid #e5e7eb;
       border-radius: 12px;
       padding: 15px;
-      margin-bottom: 15px;
+      margin-bottom: 12px;
       background-color: #f9fafb;
       display: flex;
       flex-direction: column;
@@ -49,7 +49,7 @@
       padding: 12px 16px;
       border-radius: 12px;
       max-width: 90%;
-      line-height: 1.6;
+      line-height: 1.5;
       font-size: 15px;
       word-break: break-word;
       white-space: pre-wrap;
@@ -69,7 +69,7 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      margin-top: 12px;
+      margin-top: 10px;
     }
     .option-btn {
       background-color: #e0e7ff;
@@ -85,13 +85,32 @@
     .option-btn:hover {
       background-color: #c7d2fe;
     }
+    /* 快捷功能列 (提示、看圖) */
+    .quick-actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .quick-btn {
+      background-color: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .quick-btn:hover {
+      background-color: #fde68a;
+    }
     .input-area {
       display: flex;
-      gap: 10px;
+      gap: 8px;
     }
     #user-input {
       flex: 1;
-      padding: 12px 16px;
+      padding: 12px 14px;
       font-size: 16px;
       border: 1px solid #d1d5db;
       border-radius: 8px;
@@ -100,18 +119,31 @@
     #user-input:focus {
       border-color: #4f46e5;
     }
-    #send-btn {
-      padding: 12px 20px;
-      font-size: 16px;
+    .action-btn {
+      padding: 12px 16px;
+      font-size: 15px;
       background-color: #4f46e5;
       color: white;
       border: none;
       border-radius: 8px;
       cursor: pointer;
       font-weight: bold;
+      white-space: nowrap;
     }
-    #send-btn:hover {
+    .action-btn:hover {
       background-color: #4338ca;
+    }
+    #mic-btn {
+      background-color: #059669;
+    }
+    #mic-btn.recording {
+      background-color: #dc2626;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
     }
   </style>
 </head>
@@ -120,25 +152,35 @@
   <div class="container">
     <h1>🧙‍♂️ 國小數學魔法王國 - 因數與倍數</h1>
     
+    <!-- 快捷功能列 -->
+    <div class="quick-actions">
+      <button class="quick-btn" onclick="sendOption('💡 老師，請給我一個提示！')">💡 給我提示</button>
+      <button class="quick-btn" onclick="sendOption('🖼️ 我想看圖片提示！')">🖼️ 看圖片提示</button>
+    </div>
+
     <div id="chat-box">
       <div class="message ai">
-        嗨！歡迎來到數學魔法王國！🧙‍♂️ 今天我們要挑戰第一個魔法任務：「分裝 12 個魔法蘋果 🍎」。只要能把蘋果平分裝進袋子里，而且一顆都不剩下，你就能解開「因數」的秘密密碼！準備好跟我一起探索了嗎？
+        嗨！歡迎來到魔法王國！🍎 我們要把 12 顆蘋果平分裝進袋子裡，一顆都不剩。請問可以怎麼裝呢？
         <div class="options-container">
-          <button class="option-btn" onclick="sendOption('[A] 我準備好了，快帶我玩分裝魔法！')">[A] 我準備好了，快帶我玩分裝魔法！</button>
-          <button class="option-btn" onclick="sendOption('[B] 什麼是因數？可以先提示我嗎？')">[B] 什麼是因數？可以先提示我嗎？</button>
+          <button class="option-btn" onclick="sendOption('[A] 每次裝 2 個，拿 6 個袋子')">[A] 每次裝 2 個，拿 6 個袋子</button>
+          <button class="option-btn" onclick="sendOption('[B] 每次裝 3 個，拿 4 個袋子')">[B] 每次裝 3 個，拿 4 個袋子</button>
+          <button class="option-btn" onclick="sendOption('[C] 每次裝 5 個，好像分不平...')">[C] 每次裝 5 個，好像分不平...</button>
         </div>
       </div>
     </div>
 
+    <!-- 輸入框與語音列 -->
     <div class="input-area">
-      <input type="text" id="user-input" placeholder="輸入你的回答或想法..." />
-      <button id="send-btn" onclick="handleSendText()">送出</button>
+      <input type="text" id="user-input" placeholder="輸入想法，或點右邊麥克風說話..." />
+      <button id="mic-btn" class="action-btn" onclick="toggleSpeechRecognition()" title="語音輸入">🎤 語音</button>
+      <button id="send-btn" class="action-btn" onclick="handleSendText()">送出</button>
     </div>
   </div>
 
   <script>
     const chatBox = document.getElementById('chat-box');
     const userInput = document.getElementById('user-input');
+    const micBtn = document.getElementById('mic-btn');
     let conversationHistory = [];
 
     userInput.addEventListener('keypress', function (e) {
@@ -176,7 +218,6 @@
         removeMessage(loadingId);
 
         const aiReply = data.text || "AI 老師暫時無法回應。";
-        
         appendAiMessageSmart(aiReply);
         
         conversationHistory.push({ role: 'model', parts: [{ text: aiReply }] });
@@ -206,7 +247,6 @@
       let options = [];
 
       lines.forEach(line => {
-        // 抓取開頭是 [A]、[B]、[C]、[D] 的選項行
         if (/^\[?[A-D][\.\］\s]/.test(line.trim())) {
           options.push(line.trim());
         } else {
@@ -216,7 +256,6 @@
 
       msgDiv.innerText = mainTextLines.join('\n').trim();
 
-      // 只有當 AI 有產生存選項時，才動態產生對應按鈕
       if (options.length > 0) {
         const optionsDiv = document.createElement('div');
         optionsDiv.className = 'options-container';
@@ -240,6 +279,52 @@
       if (!id) return;
       const elem = document.getElementById(id);
       if (elem) elem.remove();
+    }
+
+    // 🎤 語音輸入功能 (使用瀏覽器內建 Web Speech API)
+    let recognition = null;
+    function toggleSpeechRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert('您的瀏覽器不支援語音輸入功能（建議使用 Chrome 瀏覽器）。');
+        return;
+      }
+
+      if (!recognition) {
+        recognition = new SpeechRecognition();
+        recognition.lang = 'zh-TW';
+        recognition.interimResults = false;
+
+        recognition.onstart = () => {
+          micBtn.classList.add('recording');
+          micBtn.innerText = '🔴 聆聽中...';
+        };
+
+        recognition.onresult = (event) => {
+          const speechToText = event.results[0][0].transcript;
+          userInput.value = speechToText;
+        };
+
+        recognition.onerror = () => {
+          stopRecognition();
+        };
+
+        recognition.onend = () => {
+          stopRecognition();
+        };
+      }
+
+      if (micBtn.classList.contains('recording')) {
+        recognition.stop();
+      } else {
+        recognition.recognitionFlag = true;
+        recognition.start();
+      }
+    }
+
+    function stopRecognition() {
+      micBtn.classList.remove('recording');
+      micBtn.innerText = '🎤 語音';
     }
   </script>
 </body>
