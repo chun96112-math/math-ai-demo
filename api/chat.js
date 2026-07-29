@@ -1,18 +1,31 @@
 export default async function handler(req, res) {
-  // 只允許 POST 請求
+  // 1. 允許任何前端網頁（包含你的 GitHub Pages）連線 (CORS 設定)
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+  );
+
+  // 處理瀏覽器的預檢請求 (Preflight)
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const { prompt, history } = req.body;
-  const apiKey = process.env.GEMINI_API_KEY; // 安全讀取環境變數
+  const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    return res.status(500).json({ error: '未設定 GEMINI_API_KEY' });
+    return res.status(500).json({ error: '未設定 GEMINI_API_KEY 環境變數' });
   }
 
-  // 設定系統提示詞 (System Instructions)
-  const systemInstruction = `你是一位親切、具啟發性的國小數學引導老師...（此處貼入你調校好的 System Instructions，包含 SVG 出圖與防劇透規則）`;
+  const systemInstruction = `你是一位親切、具啟發性的國小數學引導老師...（此處貼入你的 Prompt）`;
 
   try {
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
@@ -29,7 +42,7 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-    const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || "AI 暫時無法回應，請重試。";
+    const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || "AI 暫時無法回應，請檢查 API Key 是否正確。";
     
     return res.status(200).json({ text: replyText });
   } catch (error) {
